@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ImageResizer
@@ -65,12 +66,16 @@ namespace ImageResizer
         /// <param name="sourcePath">圖片來源目錄路徑</param>
         /// <param name="destPath">產生圖片目的目錄路徑</param>
         /// <param name="scale">縮放比例</param>
-        public async Task ResizeImagesAsync(string sourcePath, string destPath, double scale)
+        public async Task ResizeImagesAsync(string sourcePath, string destPath, double scale, CancellationToken token)
         {
             List<Task> Tasks = new List<Task>();
             var allFiles = FindImages(sourcePath);
             foreach (var filePath in allFiles)
             {
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }
                 Tasks.Add(Task.Run(async () =>
                 {
                     Image imgPhoto = Image.FromFile(filePath);
@@ -81,7 +86,10 @@ namespace ImageResizer
 
                     int destionatonWidth = (int)(sourceWidth * scale);
                     int destionatonHeight = (int)(sourceHeight * scale);
-
+                    if (token.IsCancellationRequested)
+                    {
+                        return ;
+                    }
                     Bitmap processedImage = await processBitmapAsync((Bitmap)imgPhoto,
                         sourceWidth, sourceHeight,
                         destionatonWidth, destionatonHeight);
@@ -89,11 +97,22 @@ namespace ImageResizer
                     string destFile = Path.Combine(destPath, imgName + ".jpg");
                     processedImage.Save(destFile, ImageFormat.Jpeg);
                 }));
+
             }
+
             await Task.WhenAll(Tasks);
+            if (token.IsCancellationRequested)
+            {
+                Clean(destPath);
+            }
         }
 
 
+
+        public async Task ResizeImagesAsync(string sourcePath, string destPath, double scale)
+        {
+            ResizeImagesAsync(sourcePath, destPath, scale,CancellationToken.None);
+        }
         /// <summary>
         /// 找出指定目錄下的圖片
         /// </summary>

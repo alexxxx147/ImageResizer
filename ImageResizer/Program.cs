@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ImageResizer
@@ -11,6 +12,20 @@ namespace ImageResizer
     {
         async static Task Main(string[] args)
         {
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+
+            #region 等候使用者輸入 取消 c 按鍵
+            ThreadPool.QueueUserWorkItem(x =>
+            {
+                ConsoleKeyInfo key = Console.ReadKey();
+                if (key.Key == ConsoleKey.C)
+                {
+                    cts.Cancel();
+                }
+            });
+            #endregion
             string sourcePath = Path.Combine(Environment.CurrentDirectory, "images");
             string destinationPath = Path.Combine(Environment.CurrentDirectory, "output"); ;
             long oldProcessTime;
@@ -30,7 +45,7 @@ namespace ImageResizer
             sw.Reset();
 
             sw.Start();
-            await imageProcess.ResizeImagesAsync(sourcePath, destinationPath, 2.0);
+            await imageProcess.ResizeImagesAsync(sourcePath, destinationPath, 2.0, cts.Token);
             sw.Stop();
             Console.WriteLine($"新花費時間: {sw.ElapsedMilliseconds} ms");
 
