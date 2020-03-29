@@ -45,13 +45,24 @@ namespace ImageResizer
             sw.Reset();
 
             sw.Start();
-            await imageProcess.ResizeImagesAsync(sourcePath, destinationPath, 2.0, cts.Token);
-            sw.Stop();
-            Console.WriteLine($"新花費時間: {sw.ElapsedMilliseconds} ms");
 
-            newProcessTime = sw.ElapsedMilliseconds;
-            improvement = ((float)(oldProcessTime - newProcessTime) / oldProcessTime)*100;
-            Console.WriteLine($"效能提升: {improvement} %");
+
+            await imageProcess.ResizeImagesAsync(sourcePath, destinationPath, 2.0, cts.Token);
+
+            sw.Stop();
+            if (!cts.Token.IsCancellationRequested)
+            {
+                Console.WriteLine($"新花費時間: {sw.ElapsedMilliseconds} ms");
+
+                newProcessTime = sw.ElapsedMilliseconds;
+                improvement = ((float)(oldProcessTime - newProcessTime) / oldProcessTime) * 100;
+                Console.WriteLine($"效能提升: {improvement} %");
+            }
+            else
+            {
+                Console.WriteLine($"{Environment.NewLine}工作已經取消");
+            }
+
 
         }
     }

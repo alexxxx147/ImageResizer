@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -100,11 +101,15 @@ namespace ImageResizer
 
             }
 
-            await Task.WhenAll(Tasks);
-            if (token.IsCancellationRequested)
-            {
-                Clean(destPath);
-            }
+            await Task.WhenAll(Tasks).ContinueWith(task=>{
+
+                if (token.IsCancellationRequested)
+                {
+                    Clean(destPath);
+                    return;
+                }
+            });
+
         }
 
 
